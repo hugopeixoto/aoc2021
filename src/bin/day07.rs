@@ -1,14 +1,21 @@
+#![feature(int_abs_diff)]
 #![feature(test)]
 extern crate test;
 
 pub fn day07(input: String) -> (usize, usize) {
-    let state = input.trim().split(",").map(|x| x.parse::<i32>().unwrap()).collect::<Vec<_>>();
+    let mut state = input.trim().split(",").map(|x| x.parse::<usize>().unwrap()).collect::<Vec<_>>();
 
-    let range = 0 ..= state[state.len() - 1];
+    state.sort();
 
-    let p1 = range.clone().map(|breakpoint| state.iter().map(|v| (v - breakpoint).abs()).sum::<i32>() as usize).min().unwrap();
+    let median = state[state.len()/2];
+    let average = state.iter().sum::<usize>() as f64 / state.len() as f64;
 
-    let p2 = range.clone().map(|breakpoint| state.iter().map(|v| (v - breakpoint).abs()).map(|v| v*(v+1)/2).sum::<i32>() as usize).min().unwrap();
+    let p1 = state.iter().map(|x| x.abs_diff(median)).sum();
+
+    let p2a: usize = state.iter().map(|&x| x.abs_diff(average.floor() as usize)).map(|x| x*(x+1)/2).sum();
+    let p2b: usize = state.iter().map(|&x| x.abs_diff(average.ceil() as usize)).map(|x| x*(x+1)/2).sum();
+
+    let p2 = p2a.min(p2b);
 
     (p1, p2)
 }
