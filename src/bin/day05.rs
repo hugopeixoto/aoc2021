@@ -19,19 +19,23 @@ pub fn day05(input: String) -> (usize, usize) {
     let len = segments.iter().map(|(x,y,dx,dy,l)| (x+dx*l).max(y+dy*l)).max().unwrap() + 1;
 
     let mut counts = vec![];
-    counts.resize(len.pow(2) as usize, 0);
+    counts.resize(len.pow(2) as usize, 0i32);
 
     for &(x,y,dx,dy,l) in segments.iter().filter(|(_,_,dx,dy,_)| *dx == 0 || *dy == 0) {
+        let inc = dx*len + dy;
+        let idx = x*len + y;
         for step in 0..=l {
-            counts[((x+dx*step) * len + (y+dy*step)) as usize] += 1;
+            counts[(idx + inc*step) as usize] += 1;
         }
     }
 
     let p1 = counts.iter().filter(|&&v| v > 1).count();
 
     for &(x,y,dx,dy,l) in segments.iter().filter(|(_,_,dx,dy,_)| *dx != 0 && *dy != 0) {
+        let inc = dx*len + dy;
+        let idx = x*len + y;
         for step in 0..=l {
-            counts[((x+dx*step) * len + (y+dy*step)) as usize] += 1;
+            counts[(idx + inc*step) as usize] += 1;
         }
     }
 
