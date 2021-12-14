@@ -1,47 +1,90 @@
 #![feature(test)]
 extern crate test;
 
-pub fn calc(edges: &Vec<(bool, Vec<usize>)>, start: usize, target: usize) -> usize {
-    let mut stack = Vec::with_capacity(100);
+type Edges = Vec<(bool, Vec<usize>)>;
 
-    stack.push((start, 1 << start));
-    let mut total = 0;
-    while !stack.is_empty() {
-        let (current, path) = stack.pop().unwrap();
-        for next in edges[current].1.iter().rev() {
-            let npath = path | 1 << next;
-            if edges[*next].0 || npath != path {
-                if *next == target {
-                    total += 1;
-                } else {
-                    stack.push((*next, npath));
-                }
-            }
-        }
-    }
-
-    total
+pub trait State<T> {
+    fn starting(node: usize) -> Self;
+    fn node(&self) -> usize;
+    fn next(&self, edges: &Edges, node: usize) -> Option<T>;
 }
 
-pub fn calc2(edges: &Vec<(bool, Vec<usize>)>, start: usize, target: usize) -> usize {
-    let mut stack = Vec::with_capacity(100);
+#[derive(Clone, Copy, Default)]
+pub struct State1 {
+    node: usize,
+    path: usize,
+}
 
-    stack.push((start, 1 << start, false));
+impl State<State1> for State1 {
+    fn starting(node: usize) -> Self {
+        State1 { node, path: 1 << node }
+    }
+
+    fn node(&self) -> usize {
+        self.node
+    }
+
+    fn next(&self, edges: &Edges, node: usize) -> Option<Self> {
+        let npath = self.path | 1 << node;
+        if edges[node].0 || npath != self.path {
+            Some(State1 { node, path: npath })
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Clone, Copy, Default)]
+pub struct State2 {
+    node: usize,
+    path: usize,
+    dobles: bool,
+}
+
+impl State<State2> for State2 {
+    fn starting(node: usize) -> Self {
+        State2 { node, path: 1 << node, dobles: false }
+    }
+
+    fn node(&self) -> usize {
+        self.node
+    }
+
+    fn next(&self, edges: &Edges, node: usize) -> Option<Self> {
+        let npath = self.path | 1 << node;
+        let requires_doble = edges[node].0 == false && npath == self.path;
+        if !requires_doble || !self.dobles {
+            Some(State2 { node, path: npath, dobles: self.dobles || requires_doble })
+        } else {
+            None
+        }
+    }
+}
+
+pub fn calc<S: State<S> + Default + Copy>(edges: &Edges, start: usize, target: usize) -> usize {
+    let mut stack = [S::default(); 100]; // (:
+    let mut ss = 0;
+
+    stack[0] = S::starting(start);
+    ss += 1;
+
     let mut total = 0;
-    while !stack.is_empty() {
-        let (current, path, dobles) = stack.pop().unwrap();
+    while ss > 0 {
+        ss -= 1;
+        let state = stack[ss];
 
-        for next in edges[current].1.iter().rev() {
+        for next in edges[state.node()].1.iter() {
             if *next != start {
-                let npath = path | 1 << next;
-                let seen = npath == path;
-                let requires_doble = edges[*next].0 == false && seen;
-                if !requires_doble || !dobles {
-                    if *next == target {
-                        total += 1;
-                    } else {
-                        stack.push((*next, npath, dobles || requires_doble));
-                    }
+                match state.next(&edges, *next) {
+                    Some(nstate) => {
+                        if *next == target {
+                            total += 1;
+                        } else {
+                            stack[ss] = nstate;
+                            ss += 1;
+                        }
+                    },
+                    None => {}
                 }
             }
         }
@@ -73,12 +116,8 @@ pub fn day12(input: String) -> (usize, usize) {
         edges[id2].1.push(id1);
     }
 
-    for e in edges.iter_mut() {
-        e.1.sort();
-    }
-
-    let p1 = calc(&edges, ids["start"], ids["end"]);
-    let p2 = calc2(&edges, ids["start"], ids["end"]);
+    let p1 = calc::<State1>(&edges, ids["start"], ids["end"]);
+    let p2 = calc::<State2>(&edges, ids["start"], ids["end"]);
 
     (p1, p2)
 }

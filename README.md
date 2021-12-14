@@ -12,7 +12,7 @@ test bench_day08 ... bench:     290,894 ns/iter (+/- 13,614)
 test bench_day09 ... bench:     442,723 ns/iter (+/- 13,974)
 test bench_day10 ... bench:     122,774 ns/iter (+/- 3,751)
 test bench_day11 ... bench:     370,425 ns/iter (+/- 9,057)
-test bench_day12 ... bench:   4,292,761 ns/iter (+/- 142,867)
+test bench_day12 ... bench:   3,557,884 ns/iter (+/- 205,475)
 test bench_day13 ... bench:     157,063 ns/iter (+/- 5,732)
 test bench_day14 ... bench:     259,296 ns/iter (+/- 4,307)
 ```
