@@ -4,45 +4,48 @@ extern crate test;
 
 use std::collections::HashMap;
 
+type Rules = HashMap<(char, char), char>;
 type Pairs = HashMap<(char, char), usize>;
 type Counts = HashMap<char, usize>;
 
-pub fn steps(rules: &HashMap<(char, char), char>, pairs: &Pairs, counts: &Counts) -> (Pairs, Counts) {
-    let mut npairs = HashMap::new();
-    let mut ncounts = counts.clone();
+pub fn steps(rules: &Rules, pairs: &Pairs) -> Pairs {
+    let mut npairs = Pairs::with_capacity(100);
 
     for (k, v) in pairs.iter() {
         let i = rules[k];
         *npairs.entry((k.0, i)).or_insert(0) += v;
         *npairs.entry((i, k.1)).or_insert(0) += v;
-        *ncounts.entry(i).or_insert(0) += v;
     }
 
-    (npairs, ncounts)
+    npairs
 }
 
-pub fn solution(counts: &Counts) -> usize {
-    counts.values().max().unwrap() - counts.values().min().unwrap()
+pub fn solution(template: &Vec<char>, pairs: &Pairs) -> usize {
+    let mut counts = Counts::new();
+    for (&(a,b), k) in pairs.iter() {
+        *counts.entry(a).or_insert(0) += k;
+        *counts.entry(b).or_insert(0) += k;
+    }
+
+    *counts.entry(template[0]).or_insert(0) += 1;
+    *counts.entry(template[template.len() - 1]).or_insert(0) += 1;
+
+    (counts.values().max().unwrap() - counts.values().min().unwrap()) / 2
 }
 
 pub fn day14(input: String) -> (usize, usize) {
     let lines = input.lines().collect::<Vec<_>>();
 
-    let template = lines[0];
-    let mut rules = HashMap::new();
-
-    let mut values = Pairs::new();
-    let mut counts = Counts::new();
+    let template = lines[0].chars().collect::<Vec<_>>();
+    let mut pairs = Pairs::new();
     for i in 1..template.len() {
-        let a1 = template.chars().nth(i - 1).unwrap();
-        let a2 = template.chars().nth(i).unwrap();
+        let a1 = template[i - 1];
+        let a2 = template[i];
 
-        *values.entry((a1, a2)).or_insert(0) += 1;
-    }
-    for c in template.chars() {
-        *counts.entry(c).or_insert(0) += 1;
+        *pairs.entry((a1, a2)).or_insert(0) += 1;
     }
 
+    let mut rules = Rules::new();
     for r in &lines[2..] {
         let mut p = r.split(" -> ");
         let mut a = p.next().unwrap().chars();
@@ -54,14 +57,14 @@ pub fn day14(input: String) -> (usize, usize) {
     }
 
     for _ in 0..10 {
-        (values, counts) = steps(&rules, &values, &counts);
+        pairs = steps(&rules, &pairs);
     }
-    let p1 = solution(&counts);
+    let p1 = solution(&template, &pairs);
 
     for _ in 10..40 {
-        (values, counts) = steps(&rules, &values, &counts);
+        pairs = steps(&rules, &pairs);
     }
-    let p2 = solution(&counts);
+    let p2 = solution(&template, &pairs);
 
     (p1, p2)
 }

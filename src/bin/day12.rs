@@ -1,33 +1,49 @@
 #![feature(test)]
 extern crate test;
 
-pub fn calc(edges: &Vec<(bool, Vec<usize>)>, current: usize, mut path: usize, target: usize) -> usize {
-    if current == target {
-        return 1;
-    }
+pub fn calc(edges: &Vec<(bool, Vec<usize>)>, start: usize, target: usize) -> usize {
+    let mut stack = Vec::with_capacity(100);
 
+    stack.push((start, 1 << start));
     let mut total = 0;
-    path |= 1 << current;
-    for next in edges[current].1.iter() {
-        if edges[*next].0 || path & (1 << next) == 0 {
-            total += calc(edges, *next, path, target);
+    while !stack.is_empty() {
+        let (current, path) = stack.pop().unwrap();
+        for next in edges[current].1.iter().rev() {
+            let npath = path | 1 << next;
+            if edges[*next].0 || npath != path {
+                if *next == target {
+                    total += 1;
+                } else {
+                    stack.push((*next, npath));
+                }
+            }
         }
     }
 
     total
 }
 
-pub fn calc2(edges: &Vec<(bool, Vec<usize>)>, current: usize, mut path: usize, dobles: bool, start: usize, target: usize) -> usize {
-    if current == target {
-        return 1;
-    }
+pub fn calc2(edges: &Vec<(bool, Vec<usize>)>, start: usize, target: usize) -> usize {
+    let mut stack = Vec::with_capacity(100);
 
+    stack.push((start, 1 << start, false));
     let mut total = 0;
-    path |= 1 << current;
-    for next in edges[current].1.iter() {
-        let seen = path & (1 << next) != 0;
-        if *next != start && (edges[*next].0 || !seen || !dobles) {
-            total += calc2(edges, *next, path, dobles || (edges[*next].0 == false && seen), start, target);
+    while !stack.is_empty() {
+        let (current, path, dobles) = stack.pop().unwrap();
+
+        for next in edges[current].1.iter().rev() {
+            if *next != start {
+                let npath = path | 1 << next;
+                let seen = npath == path;
+                let requires_doble = edges[*next].0 == false && seen;
+                if !requires_doble || !dobles {
+                    if *next == target {
+                        total += 1;
+                    } else {
+                        stack.push((*next, npath, dobles || requires_doble));
+                    }
+                }
+            }
         }
     }
 
@@ -57,8 +73,12 @@ pub fn day12(input: String) -> (usize, usize) {
         edges[id2].1.push(id1);
     }
 
-    let p1 = calc(&edges, ids["start"], 0, ids["end"]);
-    let p2 = calc2(&edges, ids["start"], 0, false, ids["start"], ids["end"]);
+    for e in edges.iter_mut() {
+        e.1.sort();
+    }
+
+    let p1 = calc(&edges, ids["start"], ids["end"]);
+    let p2 = calc2(&edges, ids["start"], ids["end"]);
 
     (p1, p2)
 }
